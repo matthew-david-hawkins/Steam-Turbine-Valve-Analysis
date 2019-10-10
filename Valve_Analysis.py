@@ -20,6 +20,7 @@ import itertools
 import PIL
 import time
 from scipy.stats import linregress
+from statistics import mean
 np.seterr(all='raise')
 
 
@@ -834,25 +835,70 @@ else:
     x_axis.insert(0,0)
     y_axis.insert(0,0)
 
-    # Create figure and axis objects
-    fig, ax = plt.subplots()
-
-    # Plot data
-    data = plt.scatter(x_axis, y_axis, alpha = 0.5)
-    plt.xlim( min(x_axis) - 0.01*(max(x_axis) - min(x_axis)), max(x_axis) + 0.01*(max(x_axis) - min(x_axis)) )
-
     # Create 100 data points for the fit
     model_x = np.linspace(min(x_axis) - 0.01*(max(x_axis) - min(x_axis)), max(x_axis) + 0.01*(max(x_axis) - min(x_axis)), 100)
 
-    # Plot linear fit to start with
+    # Calculate linear fit to start with
     (slope, intercept, _, _, _) = linregress(x_axis, y_axis)
-    fit, = plt.plot(model_x, slope * model_x + intercept)
+    fit_x_data = model_x
+    fit_y_data = slope * model_x + intercept
 
-    # Plot lower boundary for outliers
-    lb, = plt.plot( ax.get_children()[1]._x, ax.get_children()[1]._y - 0.05*ax.get_children()[1]._y, color='red', alpha=0.5 )
+    # Calculate lower boundary for outliers
+    
+    # The x points are the fit curve points
+    lb_model_x = fit_x_data
+    
+    # The y-points are the fit curve points - value
+    lb_model_y = fit_y_data - 0.05*mean(fit_y_data)
 
-    # Plot upper boundary for outliers
-    ub, = plt.plot( ax.get_children()[1]._x, ax.get_children()[1]._y + 0.05*ax.get_children()[1]._y, color='red', alpha=0.5 )
+    # calculate upper boundary for outliers
+    
+    # The x points are the fit curve points
+    ub_model_x = fit_x_data
+    
+    # The y-points are the fit curve points - value
+    ub_model_y = fit_y_data + 0.05*mean(fit_y_data)
+    
+    # For each data point, determine if it is oustide the lower boundary or upper boundary via linear interpolation
+    ll_list = np.interp( x_axis, lb_model_x, lb_model_y)
+    ul_list = np.interp( x_axis, ub_model_x, ub_model_y)
+    
+    outlier_x_data = []
+    outlier_y_data = []
+    filt_x_data = []
+    filt_y_data = []
+    for i in range(len(y_axis)):
+        if (y_axis[i] > ul_list[i]) or (y_axis[i] < ll_list[i]):
+            outlier_x_data.append(x_axis[i])
+            outlier_y_data.append(y_axis[i])
+            filt_x_data.append(x_axis[i])
+            filt_y_data.append(np.nan)
+        else:
+            outlier_x_data.append(x_axis[i])
+            outlier_y_data.append(np.nan)
+            filt_x_data.append(x_axis[i])
+            filt_y_data.append(y_axis[i])
+
+    # Create figure and axis objects
+    fig, ax = plt.subplots()
+
+    # Plot data identified as outliers in gray
+    outliers = plt.scatter( outlier_x_data, outlier_y_data, color='black', alpha=0.1)
+
+    # Plot curve-fit as a dotted blue line
+    fit, = plt.plot(model_x, slope * model_x + intercept, '--')
+
+    # Plot in red, semi-opaque
+    lb, = plt.plot( lb_model_x, lb_model_y, color='red', alpha=0.2)
+
+    # Plot in red, semi-opaque
+    ub, = plt.plot( ub_model_x, ub_model_y, color='red', alpha=0.2)
+
+    # Plot data no identified as outliers in blue
+    filt_data = plt.scatter( filt_x_data, filt_y_data, alpha=0.75)
+
+    # Set plot range to 1% outside the values in the data
+    plt.xlim( min(x_axis) - 0.01*(max(x_axis) - min(x_axis)), max(x_axis) + 0.01*(max(x_axis) - min(x_axis)) )
 
     #left, bottom, width, height
     axRadio  = plt.axes([0.4375, 0.01, 0.125, 0.2])
@@ -875,20 +921,57 @@ else:
 
         # For each selection, pick curve fit to optimize with
         if radioValue == 'linear':            
-            # Get best linear fit
+            # Get best linear fit for all data
             (slope_new, intercept_new, r_value, p_value, stderr) = linregress(x_axis, y_axis)
             
             # calculate y-values using fit function
-            y_axis_new = slope_new * model_x + intercept_new
+            fit_x_data = model_x
+            fit_y_data = slope_new * model_x + intercept_new
+            #print(fit_y_data)
+            # Calculate lower boundary for outliers
+    
+            # The x points are the fit curve points
+            lb_model_x = fit_x_data
+
+            # The y-points are the fit curve points - value
+            lb_model_y = fit_y_data - slider1.val*mean(fit_y_data)
+
+            # calculate upper boundary for outliers
+
+            # The x points are the fit curve points
+            ub_model_x = fit_x_data
+
+            # The y-points are the fit curve points - value
+            ub_model_y = fit_y_data + slider1.val*mean(fit_y_data)
+
+            # For each data point, determine if it is oustide the lower boundary or upper boundary via linear interpolation
+            ll_list = np.interp( x_axis, lb_model_x, lb_model_y)
+            ul_list = np.interp( x_axis, ub_model_x, ub_model_y)
+
+            outlier_y_data = []
+            filt_y_data = []
+            for i in range(len(y_axis)):
+                if (y_axis[i] > ul_list[i]) or (y_axis[i] < ll_list[i]):
+                    outlier_y_data.append(y_axis[i])
+                    filt_y_data.append(np.nan)
+                else:
+                    outlier_y_data.append(np.nan)
+                    filt_y_data.append(y_axis[i])
+
+            # Reset outlier data points
+            outliers.set_offsets(np.c_[outlier_x_data, outlier_y_data])
             
             # Reset best fit line data points
-            fit.set_ydata(y_axis_new)
+            fit.set_ydata(fit_y_data)
 
             # Plot lower boundary for outliers
-            lb.set_ydata( y_axis_new - slider1.val*y_axis_new)
+            lb.set_ydata( lb_model_y)
 
             # Plot upper boundary for outliers
-            ub.set_ydata( y_axis_new + slider1.val*y_axis_new)
+            ub.set_ydata( ub_model_y)
+            
+            # Reset filtered data points
+            filt_data.set_offsets(np.c_[filt_x_data, filt_y_data])
 
             # Display equation as the plot title
             fig.suptitle('y = ' +'{:.3e}'.format(slope_new) + " * x + " + '{:.3e}'.format(intercept_new))
@@ -1042,5 +1125,4 @@ else:
     # [left, bottom, right, top]
     plt.tight_layout(rect=[0, 0.25, 1, 0.95])
     plt.show()
-
 #%%
