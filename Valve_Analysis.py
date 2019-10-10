@@ -74,6 +74,10 @@ def piecewise_3(x, y0, y1, b0, b1, b2, x0, x1):
                          lambda x: b1*x + y1-b1*x1,
                          lambda x: b2*x + y1-b2*x1])
 
+# Square root function
+def root(x, a, b):
+    return a*(x**0.5) + b
+
 # cubic function
 def cubic(x, a, b, c, d):
     return a*(x**3) + b*(x**2) + c*(x) + d
@@ -834,7 +838,7 @@ else:
     fig, ax = plt.subplots()
 
     # Plot data
-    data = plt.scatter(x_axis, y_axis)
+    data = plt.scatter(x_axis, y_axis, alpha = 0.5)
     plt.xlim( min(x_axis) - 0.01*(max(x_axis) - min(x_axis)), max(x_axis) + 0.01*(max(x_axis) - min(x_axis)) )
 
     # Create 100 data points for the fit
@@ -844,21 +848,27 @@ else:
     (slope, intercept, _, _, _) = linregress(x_axis, y_axis)
     fit, = plt.plot(model_x, slope * model_x + intercept)
 
+    # Plot lower boundary for outliers
+    lb, = plt.plot( ax.get_children()[1]._x, ax.get_children()[1]._y - 0.05*ax.get_children()[1]._y, color='red', alpha=0.5 )
+
+    # Plot upper boundary for outliers
+    ub, = plt.plot( ax.get_children()[1]._x, ax.get_children()[1]._y + 0.05*ax.get_children()[1]._y, color='red', alpha=0.5 )
+
     #left, bottom, width, height
     axRadio  = plt.axes([0.4375, 0.01, 0.125, 0.2])
-    butRadio = RadioButtons(axRadio, ('linear', 'x^2', 'x^3', 'x^4', 'x^y', '2-piecewise'))
+    butRadio = RadioButtons(axRadio, ('linear', 'x^2', 'x^0.5', 'x^3', 'x^4', 'x^y', '2-piecewise'))
 
     #left, bottom, width, height
     ax_tolerance = plt.axes([0.25, 0.22, 0.50, 0.02])
 
     #Create slider animations for the breakpoints
-    slider1 = Slider(ax_tolerance, 'Outlier Tolerance', 0, 100, valinit=1)
+    slider1 = Slider(ax_tolerance, 'Outlier Tolerance', 0, 1, valinit=0.05)
     
     # [left, bottom, right, top]
     plt.tight_layout(rect=[0, 0.25, 1, 0.95])
     
     radioValue = 0
-    def get_status(val):
+    def update(val):
         
         # Store the radio button selection in a variable
         radioValue = butRadio.value_selected
@@ -874,10 +884,39 @@ else:
             # Reset best fit line data points
             fit.set_ydata(y_axis_new)
 
+            # Plot lower boundary for outliers
+            lb.set_ydata( y_axis_new - slider1.val*y_axis_new)
+
+            # Plot upper boundary for outliers
+            ub.set_ydata( y_axis_new + slider1.val*y_axis_new)
+
             # Display equation as the plot title
             fig.suptitle('y = ' +'{:.3e}'.format(slope_new) + " * x + " + '{:.3e}'.format(intercept_new))
 
             # redraw canvas
+            fig.canvas.draw()
+            fig.canvas.flush_events()
+
+        if radioValue == 'x^0.5':            
+            # Get best quadratic fit
+            popt, pcov = optimize.curve_fit(root, x_axis, y_axis)
+
+            # calculate y-values using fit function. Numpy does not allow fractional powers of negative numbers: requiring the extra math
+            y_axis_new = popt[0]*(np.sign(model_x)*np.abs(model_x)**0.5) + popt[1]
+
+            # Reset best fit line data points
+            fit.set_ydata(y_axis_new)
+
+            # Plot lower boundary for outliers
+            lb.set_ydata( y_axis_new - slider1.val*y_axis_new)
+
+            # Plot upper boundary for outliers
+            ub.set_ydata( y_axis_new + slider1.val*y_axis_new)
+
+            # Display equation as the plot title
+            fig.suptitle('y = ' +'{:.3e}'.format(popt[0]) + " * x^0.5 + " + '{:.3e}'.format(popt[1]))
+
+            # redraw canvas while idle
             fig.canvas.draw()
             fig.canvas.flush_events()
 
@@ -890,6 +929,12 @@ else:
 
             # Reset best fit line data points
             fit.set_ydata(y_axis_new)
+
+            # Plot lower boundary for outliers
+            lb.set_ydata( y_axis_new - slider1.val*y_axis_new)
+
+            # Plot upper boundary for outliers
+            ub.set_ydata( y_axis_new + slider1.val*y_axis_new)
 
             # Display equation as the plot title
             fig.suptitle('y = ' +'{:.3e}'.format(popt[0]) + " * x^2 + " + '{:.3e}'.format(popt[1]) + " * x + " + '{:.3e}'.format(popt[2]))
@@ -910,6 +955,12 @@ else:
             # Reset best fit line data points
             fit.set_ydata(y_axis_new)
 
+            # Plot lower boundary for outliers
+            lb.set_ydata( y_axis_new - slider1.val*y_axis_new)
+
+            # Plot upper boundary for outliers
+            ub.set_ydata( y_axis_new + slider1.val*y_axis_new)
+
             # redraw canvas while idle
             fig.canvas.draw()
             fig.canvas.flush_events()
@@ -926,6 +977,12 @@ else:
             
             # Reset best fit line data points
             fit.set_ydata(y_axis_new)
+            
+            # Plot lower boundary for outliers
+            lb.set_ydata( y_axis_new - slider1.val*y_axis_new)
+
+            # Plot upper boundary for outliers
+            ub.set_ydata( y_axis_new + slider1.val*y_axis_new)
 
             # redraw canvas while idle
             fig.canvas.draw()
@@ -935,10 +992,18 @@ else:
             popt, pcov = optimize.curve_fit(power, x_axis, y_axis)
 
             # calculate y-values using fit function
-            y_axis_new = popt[0]*(model_x**(popt[1])) + popt[2]
+            
+            # Numpy does not allow fractional powers of negative numbers: requiring the extra math
+            y_axis_new = popt[0]*(np.sign(model_x)*np.abs(model_x)**(popt[1])) + popt[2]
 
             # Reset best fit line data points
             fit.set_ydata(y_axis_new)
+            
+            # Plot lower boundary for outliers
+            lb.set_ydata( y_axis_new - slider1.val*y_axis_new)
+
+            # Plot upper boundary for outliers
+            ub.set_ydata( y_axis_new + slider1.val*y_axis_new)
 
             # Display equation as the plot title
             fig.suptitle('y = ' +'{:.3e}'.format(popt[0]) + " * x^(" + '{:.3e}'.format(popt[1]) + ") + " + '{:.3e}'.format(popt[2]))
@@ -956,6 +1021,12 @@ else:
             # Reset best fit line data points
             fit.set_ydata(y_axis_new)
 
+            # Plot lower boundary for outliers
+            lb.set_ydata( y_axis_new - slider1.val*y_axis_new)
+
+            # Plot upper boundary for outliers
+            ub.set_ydata( y_axis_new + slider1.val*y_axis_new)
+
             # Display equation as the plot title
             fig.suptitle(popt)
 
@@ -964,7 +1035,9 @@ else:
             fig.canvas.flush_events()
 
     
-    butRadio.on_clicked(get_status)
+    butRadio.on_clicked(update)
+    slider1.on_changed(update)
+
     #show plot
     # [left, bottom, right, top]
     plt.tight_layout(rect=[0, 0.25, 1, 0.95])
