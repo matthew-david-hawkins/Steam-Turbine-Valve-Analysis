@@ -129,7 +129,7 @@ def filter_linear(fit_type, x_data, y_data, tol):
 
     
     # Optimize Linear fit by maximizing the distance of the outliers from the boundaries
-    return(fit_y_data, lb_model_y, ub_model_y, outlier_y_data, filt_y_data)
+    return(fit_y_data, lb_model_y, ub_model_y, outlier_y_data, filt_y_data, slope, intercept)
 
 
 
@@ -928,7 +928,7 @@ else:
     plt.xlim( min(x_axis) - 0.01*(max(x_axis) - min(x_axis)), max(x_axis) + 0.01*(max(x_axis) - min(x_axis)) )
     plt.ylim( min(y_axis) - 0.01*(max(y_axis) - min(y_axis)), max(y_axis) + 0.01*(max(y_axis) - min(y_axis)) )
 
-    fig.suptitle('Curve fit applied to data between the red lines only')
+    fig.suptitle('Automatic Outlier Elimination\n\nCurve fit applied to data between the red lines only')
 
     #left, bottom, width, height
     axRadio  = plt.axes([0.4375, 0.01, 0.125, 0.2])
@@ -961,6 +961,8 @@ else:
             ub_model_y = results[2]
             outlier_y_data = results[3]
             filt_y_data = results[4]
+            slope_new = results[5]
+            intercept_new = results[6]
 
             # Reset outlier data points
             outliers.set_offsets(np.c_[x_axis, outlier_y_data])
@@ -979,7 +981,7 @@ else:
 
             # Display equation as the plot title
             #fig.suptitle('y = ' +'{:.3e}'.format(slope_new) + " * x + " + '{:.3e}'.format(intercept_new))
-            fig.suptitle('Curve fit applied to data between the red lines only')
+            fig.suptitle('y = ' +'{:.3e}'.format(slope_new) + " * x + " + '{:.3e}'.format(intercept_new)+'\n\nCurve fit applied to data between the red lines only')
 
             # redraw canvas
             fig.canvas.draw()
@@ -996,10 +998,10 @@ else:
             fit.set_ydata(y_axis_new)
 
             # Plot lower boundary for outliers
-            lb.set_ydata( y_axis_new - slider1.val*y_axis_new)
+            lb.set_ydata( y_axis_new - slider1.val*mean(y_axis_new))
 
             # Plot upper boundary for outliers
-            ub.set_ydata( y_axis_new + slider1.val*y_axis_new)
+            ub.set_ydata( y_axis_new + slider1.val*mean(y_axis_new))
 
             # Display equation as the plot title
             fig.suptitle('y = ' +'{:.3e}'.format(popt[0]) + " * x^0.5 + " + '{:.3e}'.format(popt[1]))
@@ -1019,10 +1021,10 @@ else:
             fit.set_ydata(y_axis_new)
 
             # Plot lower boundary for outliers
-            lb.set_ydata( y_axis_new - slider1.val*y_axis_new)
+            lb.set_ydata( y_axis_new - slider1.val*mean(y_axis_new))
 
             # Plot upper boundary for outliers
-            ub.set_ydata( y_axis_new + slider1.val*y_axis_new)
+            ub.set_ydata( y_axis_new + slider1.val*mean(y_axis_new))
 
             # Display equation as the plot title
             fig.suptitle('y = ' +'{:.3e}'.format(popt[0]) + " * x^2 + " + '{:.3e}'.format(popt[1]) + " * x + " + '{:.3e}'.format(popt[2]))
@@ -1044,10 +1046,10 @@ else:
             fit.set_ydata(y_axis_new)
 
             # Plot lower boundary for outliers
-            lb.set_ydata( y_axis_new - slider1.val*y_axis_new)
+            lb.set_ydata( y_axis_new - slider1.val*mean(y_axis_new))
 
             # Plot upper boundary for outliers
-            ub.set_ydata( y_axis_new + slider1.val*y_axis_new)
+            ub.set_ydata( y_axis_new + slider1.val*mean(y_axis_new))
 
             # redraw canvas while idle
             fig.canvas.draw()
@@ -1067,10 +1069,10 @@ else:
             fit.set_ydata(y_axis_new)
             
             # Plot lower boundary for outliers
-            lb.set_ydata( y_axis_new - slider1.val*y_axis_new)
+            lb.set_ydata( y_axis_new - slider1.val*mean(y_axis_new))
 
             # Plot upper boundary for outliers
-            ub.set_ydata( y_axis_new + slider1.val*y_axis_new)
+            ub.set_ydata( y_axis_new + slider1.val*mean(y_axis_new))
 
             # redraw canvas while idle
             fig.canvas.draw()
@@ -1088,10 +1090,10 @@ else:
             fit.set_ydata(y_axis_new)
             
             # Plot lower boundary for outliers
-            lb.set_ydata( y_axis_new - slider1.val*y_axis_new)
+            lb.set_ydata( y_axis_new - slider1.val*mean(y_axis_new))
 
             # Plot upper boundary for outliers
-            ub.set_ydata( y_axis_new + slider1.val*y_axis_new)
+            ub.set_ydata( y_axis_new + slider1.val*mean(y_axis_new))
 
             # Display equation as the plot title
             fig.suptitle('y = ' +'{:.3e}'.format(popt[0]) + " * x^(" + '{:.3e}'.format(popt[1]) + ") + " + '{:.3e}'.format(popt[2]))
@@ -1110,10 +1112,10 @@ else:
             fit.set_ydata(y_axis_new)
 
             # Plot lower boundary for outliers
-            lb.set_ydata( y_axis_new - slider1.val*y_axis_new)
+            lb.set_ydata( y_axis_new - slider1.val*mean(y_axis_new))
 
             # Plot upper boundary for outliers
-            ub.set_ydata( y_axis_new + slider1.val*y_axis_new)
+            ub.set_ydata( y_axis_new + slider1.val*mean(y_axis_new))
 
             # Display equation as the plot title
             fig.suptitle(popt)
